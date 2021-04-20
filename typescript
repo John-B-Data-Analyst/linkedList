@@ -1,0 +1,692 @@
+Script started on Thu Feb 15 09:09:09 2018
+[?1034hbash-3.2$ pwd
+/Users/johnblee/Desktop/CSCI/CSCI 301/Project_5
+bash-3.2$ ls
+Project 5 Report.docx	p5.o
+a.out			p5main.cpp
+p5.cpp			typescript
+p5.h			~$oject 5 Report.docx
+bash-3.2$ ls
+Project 5 Report.docx	p5.o
+a.out			p5main.cpp
+p5.cpp			typescript
+p5.h			~$oject 5 Report.docx
+bash-3.2$ cat p5.h
+/****************************************************************************************
+typedef statement: this is the data type of the items in the list. In our program it is
+integer. Data items are represented by the word 'Item'
+
+CONSTRUCTOR
+
+Precondition: none
+Postcondition: List is initialized to its null state. In our case this is an empty list
+List()
+
+COPY CONSTRUCTOR
+Precondition: none
+Postcondition: The new list has been initialized as a copy of the initial list
+List(const List& source)
+
+DESTRUCTOR
+Never needs to be explicitly called. Destroys Lists when the user/program is done with them
+to free up memory
+Precondition: none
+Postcondition: none
+~List()
+
+MUTATOR FUNCTIONS
+
+void make_empty()
+Precondition: none
+Postcondition: The list becomes empty
+
+void insert(const Item& entry)
+Precondition: entry is not already in the list
+Postcondition: the value entry has been inserted into the correct place in the List
+
+void remove(const Item& target)
+Precondition: target is actually in the List
+Postcondition: the value target is removed from the List
+
+void operator = (const List& source)
+Precondition: The given list has been assigned a copy of the source list
+
+CONSTANT MEMBER FUNCTIONS
+
+bool empty() const
+Precondition: none
+Postcondition: Return TRUE/1 if the given List is empty, return FALSE/0 if the given List
+is not empty
+
+size_t length() const
+Precondition: none
+Postcondition: The total number of items in the list is returned
+
+bool present(const Item& target) const
+Precondition: none
+Postcondition: return TRUE/1 if target is actually in the list, return FALSE/0 if target is
+not in the list
+
+int kth (int k) const
+Precondition: The list cannot be empty. the value k must be at least 1 and smaller than the
+total number of items in the list
+
+FRIEND FUNCTION
+friend ostream& operator << (ostream& out_s, const List& b)
+Precondition: none
+Postcondition: All of the values from List b is written to the output stream 
+
+PRIVATE FUNCTION
+Node* get_node(const Item& entry, Node* link);
+Precondition: The number of the entry must exist
+Postcondition: a pointer to a Node is returned
+*****************************************************************************************/
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cstdlib>
+
+
+#ifndef P5_h
+#define P5_h
+
+namespace csci301_P5_1
+{
+class List
+{
+	public:
+	
+	//this is the data type of the items in the list - int. Data items are 
+	// represented by the word Item
+	typedef int Item;	
+
+	//Constructors
+	List() {first = NULL;}
+	List(const List& source);
+	
+	//Destructor
+	~List();
+	
+	// Mutator member functions
+	void make_empty();
+	void insert(const Item& entry);
+	void remove(const Item& target);
+	void operator = (const List& source);
+	
+	// Constant member functions
+	bool empty() const {return first == NULL;}
+	std::size_t length() const;
+	bool present(const Item& target) const;
+	Item kth(std::size_t k) const;
+	
+	// Friend function for the List class
+	friend std::ostream& operator << (std::ostream& out_s, const List& l);
+	
+	private:
+	// Private data members:	
+	struct Node
+	{
+		Item data;	
+		Node *next;
+	};
+	
+	Node *first;
+	
+	//Private function:
+	Node* get_node(const Item& entry, Node* link);
+	
+};
+
+}
+#endifbash-3.2$ ls
+Project 5 Report.docx	p5.o
+a.out			p5main.cpp
+p5.cpp			typescript
+p5.h			~$oject 5 Report.docx
+bash-3.2$ cat p5.cpp
+/*
+Invariant:
+- The items in the List are stored in a linked list in ascending order
+- The member variable called 'first' is a pointer that points to the first node in the
+Linked List. If it is an empty List, first points to the nullptr.
+*/
+#include <cassert>         // Provides assert()
+#include <cstdlib>         // Provides size_t
+#include <iostream>
+#include <iomanip>         // Provides setw()
+#include <fstream>
+#include "p5.h"
+using namespace std;
+
+
+namespace csci301_P5_1
+{
+	//Copy constructor
+	List::List(const List& source)
+	{
+		Node* p;
+		Node* last;
+		
+		if(source.first == NULL)
+			first = NULL;
+		else
+		{
+			first = get_node(source.first -> data, NULL);	//copy the first node 
+			last = first;
+			p = source.first -> next;
+			while(p != NULL)		//copy remaining Nodes
+			{
+				last -> next = get_node(p -> data, NULL);
+				last = last -> next;
+				p = p -> next;
+			}
+		}
+	}
+	
+	//Destructor
+	List::~List()
+	{
+		Node* temp;
+		
+		while(first != NULL)
+		{
+			temp = first;
+			first = first -> next;
+			delete temp;
+		}
+	}
+	
+	//Mutator member functions
+	void List::make_empty()
+	{
+		Node* temp;
+		
+		while(first != NULL)
+		{
+			temp = first;
+			first = first -> next;
+			delete temp;
+		}
+	}
+	
+	void List::insert(const Item& entry)
+	{
+		Node *prev;
+		
+		//assert(!present(entry));
+		
+		if(first == NULL || entry < first -> data)
+			first = get_node(entry, first);
+		else
+		{
+			prev = first;
+			while(prev->next != NULL && prev->next->data < entry)
+				prev = prev->next;
+			prev->next = get_node(entry, prev->next);
+		}
+	}
+	
+	void List::remove(const Item& target)
+	{
+		Node *temp;
+		Node *prev;
+		
+		//assert(present(target));
+		
+		prev = first;
+		if(prev->data == target)
+		{
+			first = first->next;
+			delete prev;
+		}
+		else
+		{
+			while(prev->next != NULL && prev->next->data < target)
+				prev = prev->next;
+			temp = prev->next;
+			prev->next = temp->next;
+			delete temp;
+		}
+	}
+	
+	void List::operator = (const List& source)
+	{
+		Node* p;
+		Node* last;
+		
+		if(&source != this)
+		{
+			make_empty();
+			if(source.first != NULL)
+			{
+				first = get_node(source.first->data, NULL);	//copy the first Node
+				last = first;
+				p = source.first->next;
+				while(p != NULL)
+				{
+					last->next = get_node(p->data, NULL);
+					last = last->next;
+					p = p->next;
+				}
+			}
+		}
+	}
+
+	
+	// Constant member functions
+	
+	size_t List::length() const
+	{
+		Node *cursor;
+		size_t count;
+		
+		count = 0;
+		for(cursor = first; cursor != NULL; cursor = cursor->next)
+			count++;
+		
+		return count;
+	}
+	
+	bool List::present(const Item& target) const
+	{
+		Node* cursor;
+		
+		for(cursor = first; 
+			cursor != NULL && cursor->data != target;
+			cursor = cursor->next)
+			;
+		return(cursor != NULL);
+	}
+	
+	List::Item List::kth(size_t k) const
+	{
+		Node *cursor;
+		size_t count;
+		
+		//assert(1 <= k && k <= length());
+		
+		cursor = first;
+		for(count = 1;count < k; count++)
+			cursor = cursor->next;
+			
+		return cursor->data;
+	}
+	
+	//Friend Function
+	ostream& operator << (ostream& out_s, const List& l)
+	{
+		List::Node *cursor;
+		
+		out_s << '(';
+		for(cursor = l.first;
+		    cursor != NULL && cursor->next != NULL;
+		    cursor = cursor->next)
+		    		out_s << cursor->data;
+		if(cursor != NULL)
+			out_s << cursor->data;
+		out_s << ')';
+		
+		return out_s;
+	}
+	
+	//Private Function:
+	List::Node* List::get_node(const Item& entry, Node* link)
+	{
+		Node *temp;
+		
+		temp = new Node;
+		temp -> data = entry;
+		temp -> next = link;
+		return temp;
+	}
+}bash-3.2$ ls
+Project 5 Report.docx	p5.o
+a.out			p5main.cpp
+p5.cpp			typescript
+p5.h			~$oject 5 Report.docx
+bash-3.2$ cat pt[K5main.cpp
+// Created By: John Blee
+// Due 15 February 2015
+// CSCI 301, Dr. Julstrom
+// Project 5
+/* This program utilizes a menu to implement a linked list. The List is defined in a class
+that is included in this main program. When the class object is defined, the program uses
+a do-while loop and switch statement to power the menu. The loop waits for input, and the
+switch statement carries out the correct operation based on the user input.
+*/
+
+#include <cassert>         // Provides assert()
+#include <cstdlib>         // Provides size_t
+#include <iostream>
+#include <iomanip>         // Provides setw()
+#include <fstream>
+#include "p5.h"
+using namespace std;
+using namespace csci301_P5_1;
+
+void displayMenu();
+
+int main()
+{
+	char letter;
+	int value, numElements, present, kth;
+	bool empty;
+	List listOne;
+	
+	displayMenu();			//Call the function to display the menu
+	do
+	{
+		cout << "--> ";		//Issue a prompt
+		cin >> letter;		//Read a command letter
+		switch (letter)		//Carry out the command
+		{
+		  case 'e':
+		  		cout << "The list has been reinitialized to empty.\n";
+		  		listOne.make_empty();
+		  		break;
+		  		
+		  case 'i': cin >> value;
+		  		cout << value << " has been inserted into the list.\n";
+		  		listOne.insert(value);
+		  		break;
+		  
+		  case 'r': cin >> value;
+		  		cout << value << " has been removed from the list.\n";
+		  		listOne.remove(value);
+		  		break;
+		  
+		  case 'm': 
+		  		empty = listOne.empty();
+		  		if(empty == 1)
+		  			cout << "The list is empty.\n";
+		  		else
+		  			cout << "The list is NOT empty.\n";
+		  		break;
+		  
+		  case 'l':
+		  		numElements = listOne.length();
+		  		cout << "There are " << numElements << " elements in the list.\n";
+		  		break;
+		  
+		  case 'p': cin >> value;
+		  		present = listOne.present(value);
+		  		if(present == 1)
+		  			cout << value << " is in the list.\n";
+		  		else
+		  			cout << value << " is NOT in the list.\n";
+		  		break;
+		  
+		  case 'k': cin >> value;
+		  		cout << "code to display the " << value << "th value in the list\n";
+		  		kth = listOne.kth(value);
+		  		cout << "The " << value << "th value of the list is " << kth << ".\n";
+		  		break;
+		  
+		  case 'w':
+		  		cout << "Here are the contents of the list:\n";
+		  		cout << listOne << endl;
+		  		break;
+		  
+		  case 'h': displayMenu();
+		  		break;
+		  		
+		}
+	}while(letter != 'q');			// quit program when 'q' is selected
+
+	return 0;
+}
+
+/****************************************************************************************/
+//Precondition: none
+//Postcondition: the following code is displayed in the terminal
+void displayMenu()
+{
+	cout << endl;
+	cout << "This program responds to commands the user enters to" << endl;
+	cout << "manipulate an ordered list of integers, which is" << endl;
+	cout << "initially empty. In the following commands, k1 is a" << endl;
+	cout << "position in the list, and v is an integer." << endl;
+	cout << " e -- Re-initialize the list to be empty." << endl;
+	cout << " i v -- Insert the value v into the list." << endl;
+	cout << " r v -- Remove the value v from the list." << endl;
+	cout << " m -- Is the list empty?" << endl;
+	cout << " l -- Report the length of the list." << endl;
+	cout << " p v -- Is the value v present in the list?" << endl;
+	cout << " k k1 -- Report the k1th value in the list." << endl;
+	cout << " w -- Write out the list." << endl;
+	cout << " h -- See this menu." << endl;
+	cout << " q -- Quit." << endl << endl;
+}
+/****************************************************************************************/
+bash-3.2$ ls
+Project 5 Report.docx	p5.o
+a.out			p5main.cpp
+p5.cpp			typescript
+p5.h			~$oject 5 Report.docx
+bash-3.2$ g++[K[K[Krm[K[Krm p5.o
+bash-3.2$ ls
+Project 5 Report.docx	p5main.cpp
+a.out			typescript
+p5.cpp			~$oject 5 Report.docx
+p5.h
+bash-3.2$ g++ -c p5.cpp
+bash-3.2$ g[Kls
+Project 5 Report.docx	p5.o
+a.out			p5main.cpp
+p5.cpp			typescript
+p5.h			~$oject 5 Report.docx
+bash-3.2$ g++ p5.s[K[Kmain.cpp p5.o
+bash-3.2$ ./a.out
+
+This program responds to commands the user enters to
+manipulate an ordered list of integers, which is
+initially empty. In the following commands, k1 is a
+position in the list, and v is an integer.
+ e -- Re-initialize the list to be empty.
+ i v -- Insert the value v into the list.
+ r v -- Remove the value v from the list.
+ m -- Is the list empty?
+ l -- Report the length of the list.
+ p v -- Is the value v present in the list?
+ k k1 -- Report the k1th value in the list.
+ w -- Write out the list.
+ h -- See this menu.
+ q -- Quit.
+
+--> w
+Here are the contents of the list:
+()
+--> m
+The list is empty.
+--> l
+There are 0 elements in the list.
+--> h
+
+This program responds to commands the user enters to
+manipulate an ordered list of integers, which is
+initially empty. In the following commands, k1 is a
+position in the list, and v is an integer.
+ e -- Re-initialize the list to be empty.
+ i v -- Insert the value v into the list.
+ r v -- Remove the value v from the list.
+ m -- Is the list empty?
+ l -- Report the length of the list.
+ p v -- Is the value v present in the list?
+ k k1 -- Report the k1th value in the list.
+ w -- Write out the list.
+ h -- See this menu.
+ q -- Quit.
+
+--> i 2
+2 has been inserted into the list.
+--> w
+Here are the contents of the list:
+(2)
+--> 
+i 3434
+3434 has been inserted into the list.
+--> w
+Here are the contents of the list:
+(2, 3434)
+--> i r 3434
+3434 has been removed from the list.
+--> w
+Here are the contents of the list:
+(2)
+--> i 5
+5 has been inserted into the list.
+--> i 8
+8 has been inserted into the list.
+--> i 9
+9 has been inserted into the list.
+--> i 12
+12 has been inserted into the list.
+--> w
+Here are the contents of the list:
+(2, 5, 8, 9, 12)
+--> m
+The list is NOT empty.
+--> l
+There are 5 elements in the list.
+--> p 2
+2 is in the list.
+--> p 8
+8 is in the list.
+--> p 9
+9 is in the list.
+--> p 12
+12 is in the list.
+--> k 1
+code to display the 1th value in the list
+The 1th value of the list is 2.
+--> k 2
+code to display the 2th value in the list
+The 2th value of the list is 5.
+--> k 3
+code to display the 3th value in the list
+The 3th value of the list is 8.
+--> k 4
+code to display the 4th value in the list
+The 4th value of the list is 9.
+--> k 5
+code to display the 5th value in the list
+The 5th value of the list is 12.
+--> p r 5
+5 has been removed from the list.
+--> w
+Here are the contents of the list:
+(2, 8, 9, 12)
+--> r 12
+12 has been removed from the list.
+--> w
+Here are the contents of the list:
+(2, 8, 9)
+--> r 9
+9 has been removed from the list.
+--> m
+The list is NOT empty.
+-->  l
+There are 2 elements in the list.
+--> i e
+The list has been reinitialized to empty.
+--> w
+Here are the contents of the list:
+()
+--> m
+The list is empty.
+--> l
+There are 0 elements in the list.
+--> i -23
+-23 has been inserted into the list.
+--> w
+Here are the contents of the list:
+(-23)
+--> - i -1
+-1 has been inserted into the list.
+--> w
+Here are the contents of the list:
+(-23, -1)
+--> -   i 0
+0 has been inserted into the list.
+--> i 100
+100 has been inserted into the list.
+--> i 9999
+9999 has been inserted into the list.
+--> w
+Here are the contents of the list:
+(-23, -1, 0, 100, 9999)
+--> m
+The list is NOT empty.
+--> p 3
+3 is NOT in the list.
+--> p 23
+23 is NOT in the list.
+--> p -45
+-45 is NOT in the list.
+--> l
+There are 5 elements in the list.
+--> k 1
+code to display the 1th value in the list
+The 1th value of the list is -23.
+--> k 2
+code to display the 2th value in the list
+The 2th value of the list is -1.
+--> k 3
+code to display the 3th value in the list
+The 3th value of the list is 0.
+--> k 4
+code to display the 4th value in the list
+The 4th value of the list is 100.
+--> k 5
+code to display the 5th value in the list
+The 5th value of the list is 9999.
+--> r 0
+0 has been removed from the list.
+--> w
+Here are the contents of the list:
+(-23, -1, 100, 9999)
+--> l
+There are 4 elements in the list.
+--> r 9999
+9999 has been removed from the list.
+--> w
+Here are the contents of the list:
+(-23, -1, 100)
+--> l
+There are 3 elements in the list.
+--> r -1
+-1 has been removed from the list.
+--> w
+Here are the contents of the list:
+(-23, 100)
+--> m
+The list is NOT empty.
+--> l
+There are 2 elements in the list.
+--> e
+The list has been reinitialized to empty.
+--> w
+Here are the contents of the list:
+()
+--> h
+
+This program responds to commands the user enters to
+manipulate an ordered list of integers, which is
+initially empty. In the following commands, k1 is a
+position in the list, and v is an integer.
+ e -- Re-initialize the list to be empty.
+ i v -- Insert the value v into the list.
+ r v -- Remove the value v from the list.
+ m -- Is the list empty?
+ l -- Report the length of the list.
+ p v -- Is the value v present in the list?
+ k k1 -- Report the k1th value in the list.
+ w -- Write out the list.
+ h -- See this menu.
+ q -- Quit.
+
+--> q
+bash-3.2$ exit
+exit
+
+Script done on Thu Feb 15 09:16:32 2018
